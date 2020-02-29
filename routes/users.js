@@ -107,37 +107,43 @@ router.post('/updateUserPhoto',(req, res)=>{
 
     readableStream.on('end', function () {
       var buf = Buffer.concat(chunks, size);
+      console.log("fileIds",fileIds);
       var pictures = {
           pathName: pathName,
           userid: fileIds.userid,
           contents: buf
       }
+      console.log("pictures",pictures);
+      
       //将图片流存入userPhotos变并删除暂存文件
       dbs("add", "userPhotos", pictures, function (data) {
+        console.log("data",data);
+        
           if (data.length == 0) {
               res.end('{"err":"抱歉，上传图片失败"}');
           } else {
               fs.unlink(files[Object.getOwnPropertyNames(files)[0]].path, function (err) {
                   if (err) return console.log(err);
               })
+              var target = files[Object.getOwnPropertyNames(files)[0]].path.split('.');
+              if (target[target.length - 1] == 'jpg' || target[target.length - 1] == 'png' || target[target.length - 1] == 'gif' || target[target.length - 1] == 'jpeg') {
+                  var obj = {
+                      cacheName: '/DownLoadPicHandler?pathName=' + pathName,
+                      success: "成功"
+                  }
+                  var str = JSON.stringify(obj);
+                  res.end(str);
+              } else {
+                  var obj = {
+                      cacheName: '/DownLoadPicHandler?pathName=' + pathName,
+                      err: "失败"
+                  }
+                  var str = JSON.stringify(obj);
+                  res.end(str);
+              }
           }
       });
-      var target = files[Object.getOwnPropertyNames(files)[0]].path.split('.');
-        if (target[target.length - 1] == 'jpg' || target[target.length - 1] == 'png' || target[target.length - 1] == 'gif' || target[target.length - 1] == 'jpeg') {
-            var obj = {
-                cacheName: '/DownLoadPicHandler?pathName=' + pathName,
-                success: "成功"
-            }
-            var str = JSON.stringify(obj);
-            res.end(str);
-        } else {
-            var obj = {
-                cacheName: '/DownLoadPicHandler?pathName=' + pathName,
-                err: "失败"
-            }
-            var str = JSON.stringify(obj);
-            res.end(str);
-        }
+      
     });
   })
 })
